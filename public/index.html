@@ -3,4 +3,314 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BEES Ops · Item List Generator</title>
+  <title>BEES Ops</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--y:#f5c518;--yd:#d4a415;--yk:#1a1200;--bg:#0f1117;--surface:#181c27;--card:#1e2333;--border:#2a3045;--border2:#3a4560;--text:#e8eaf0;--muted:#8892a4;--green:#22c55e;--green-bg:#052010;--red:#ef4444;--red-bg:#200505;--blue:#3b82f6;--blue-bg:#050d20;--mono:'JetBrains Mono','Fira Code','Courier New',monospace;--sans:'Inter',system-ui,-apple-system,sans-serif}
+    body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5}
+    .shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+    .sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+    .brand{display:flex;align-items:center;gap:10px;padding:20px 18px 18px;border-bottom:1px solid var(--border)}
+    .brand-logo{width:34px;height:34px;background:var(--y);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:var(--yk);flex-shrink:0}
+    .brand-name{font-size:13px;font-weight:600;color:var(--text);line-height:1.2}
+    .brand-sub{font-size:10px;color:var(--muted)}
+    .nav{padding:12px 10px;flex:1}
+    .nav-section{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;padding:8px 8px 4px}
+    .nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;cursor:pointer;font-size:13px;color:var(--muted);transition:all .15s;margin-bottom:1px;text-decoration:none}
+    .nav-item:hover{background:var(--card);color:var(--text)}
+    .nav-item.active{background:rgba(245,197,24,.1);color:var(--y)}
+    .nav-icon{width:16px;height:16px;flex-shrink:0;opacity:.7}
+    .nav-item.active .nav-icon{opacity:1}
+    .sidebar-footer{padding:14px 18px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
+    .main{display:flex;flex-direction:column;min-height:100vh}
+    .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+    .page-title{font-size:15px;font-weight:600;color:var(--text)}
+    .page-sub{font-size:12px;color:var(--muted);margin-top:1px}
+    .badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500}
+    .badge-yellow{background:rgba(245,197,24,.15);color:var(--y)}
+    .badge-green{background:rgba(34,197,94,.12);color:var(--green)}
+    .content{padding:28px;flex:1}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:16px}
+    .card-title{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px}
+    .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+    .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:500}
+    textarea,input[type=text],input[type=number],select{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--text);outline:none;transition:border-color .15s}
+    textarea{font-family:var(--mono);resize:vertical}
+    textarea:focus,input:focus,select:focus{border-color:var(--border2)}
+    select option{background:var(--card)}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--text);transition:all .15s}
+    .btn:hover{border-color:var(--border2);background:var(--surface)}
+    .btn:active{transform:scale(.98)}
+    .btn-primary{background:var(--y);border-color:var(--yd);color:var(--yk);font-weight:600}
+    .btn-primary:hover{background:var(--yd)}
+    .btn-sm{padding:5px 11px;font-size:11px;border-radius:6px}
+    .btn-full{width:100%;justify-content:center}
+    .steps{display:flex;margin-bottom:22px;border-bottom:1px solid var(--border)}
+    .step-tab{padding:10px 20px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;user-select:none}
+    .step-tab:hover{color:var(--text)}
+    .step-tab.active{color:var(--y);border-bottom-color:var(--y)}
+    .step-tab.done{color:var(--green)}
+    .panel{display:none}
+    .panel.active{display:block}
+    .alert{padding:10px 14px;border-radius:8px;font-size:12px;margin-bottom:12px}
+    .alert-ok{background:var(--green-bg);color:var(--green);border:1px solid rgba(34,197,94,.2)}
+    .alert-err{background:var(--red-bg);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+    .stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px}
+    .stat-label{font-size:11px;color:var(--muted);margin-bottom:4px}
+    .stat-value{font-size:22px;font-weight:600;color:var(--text);line-height:1}
+    .file-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;transition:border-color .15s}
+    .file-row:hover{border-color:var(--border2)}
+    .file-name{font-family:var(--mono);font-size:12px;color:var(--text)}
+    .file-meta{font-size:11px;color:var(--muted);margin-top:2px}
+    .preview-wrap{overflow-x:auto;margin-top:4px}
+    .preview-table{width:100%;border-collapse:collapse;font-size:11px;font-family:var(--mono)}
+    .preview-table th{text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);color:var(--muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.05em}
+    .preview-table td{padding:5px 10px;border-bottom:1px solid var(--border);color:var(--text)}
+    .preview-table tr:last-child td{border-bottom:none}
+    .preview-table tr:hover td{background:var(--surface)}
+    .hint{font-size:11px;color:var(--muted);margin-top:5px}
+    .divider{height:1px;background:var(--border);margin:16px 0}
+    .preset-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+    @media(max-width:768px){.shell{grid-template-columns:1fr}.sidebar{display:none}.content{padding:16px}.g2,.g3,.g4{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo">B</div>
+      <div><div class="brand-name">BEES Ops</div><div class="brand-sub">Quilmes · Materia</div></div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">Herramientas</div>
+      <a class="nav-item active" onclick="showPage('itemlist',event)">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        Item List Generator
+      </a>
+      <a class="nav-item" onclick="showPage('coming',event)">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7M4 7c0-2 1-3 3-3h10c2 0 3 1 3 3M4 7h16"/></svg>
+        Cruce de Bases
+      </a>
+      <a class="nav-item" onclick="showPage('coming',event)">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        Dashboard
+      </a>
+      <div class="divider"></div>
+      <div class="nav-section">Próximamente</div>
+      <a class="nav-item" onclick="showPage('coming',event)">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        Generador de Imágenes
+      </a>
+      <a class="nav-item" onclick="showPage('coming',event)">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7"/></svg>
+        Comparador UX
+      </a>
+    </nav>
+    <div class="sidebar-footer">BEES Ops v1.0 · Materia Quilmes</div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="page-title" id="page-title">Item List Generator</div>
+        <div class="page-sub" id="page-sub">Reemplaza la macro de Excel · genera CSVs en milisegundos</div>
+      </div>
+      <span class="badge badge-yellow" id="status-badge">Listo</span>
+    </div>
+    <div class="content">
+      <div id="page-itemlist">
+        <div class="steps">
+          <div class="step-tab active" id="st1" onclick="goStep(1)">1 · Vendors</div>
+          <div class="step-tab" id="st2" onclick="goStep(2)">2 · SKUs</div>
+          <div class="step-tab" id="st3" onclick="goStep(3)">3 · Config</div>
+          <div class="step-tab" id="st4" onclick="goStep(4)">4 · Exportar</div>
+        </div>
+        <div class="panel active" id="pnl1">
+          <div class="card">
+            <div class="card-title">Vendor IDs</div>
+            <label>Pegá los IDs — uno por línea, o separados por coma/punto y coma</label>
+            <textarea id="vendors" rows="10" placeholder="b37f5727-e623-48db-84f6-fa6486de2985&#10;0ed5f986-a356-4cc1-ab12-...&#10;..."></textarea>
+            <div class="hint" id="vcount">—</div>
+          </div>
+          <button class="btn btn-primary btn-full" onclick="goStep(2)">Siguiente →</button>
+        </div>
+        <div class="panel" id="pnl2">
+          <div class="card">
+            <div class="card-title">SKUs y orden</div>
+            <div class="g2">
+              <div>
+                <label>SKU / Vendor Item IDs (uno por línea)</label>
+                <textarea id="skus" rows="12" placeholder="30642&#10;30648&#10;30791&#10;..."></textarea>
+                <div class="hint" id="skucount">—</div>
+              </div>
+              <div>
+                <label>Sort order — opcional</label>
+                <textarea id="orders" rows="12" placeholder="Dejar vacío → auto&#10;1&#10;2&#10;3..."></textarea>
+                <div style="display:flex;gap:6px;margin-top:7px;flex-wrap:wrap">
+                  <button class="btn btn-sm" onclick="autoOrd()">Auto-generar orden</button>
+                  <button class="btn btn-sm" onclick="document.getElementById('orders').value=''">Limpiar</button>
+                </div>
+                <div class="hint" id="ord-hint"></div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn" onclick="goStep(1)">← Atrás</button>
+            <button class="btn btn-primary" style="flex:1" onclick="goStep(3)">Siguiente →</button>
+          </div>
+        </div>
+        <div class="panel" id="pnl3">
+          <div class="card">
+            <div class="card-title">Configuración de exportación</div>
+            <div class="g3" style="margin-bottom:14px">
+              <div><label>Store Category ID</label><input type="text" id="storeId" value="088-000-042"></div>
+              <div><label>Nombre base del archivo</label><input type="text" id="filename" placeholder="coleccion_q1_2025"></div>
+              <div><label>Máx. combos por CSV</label><input type="number" id="maxC" value="1000" min="10"></div>
+            </div>
+            <div class="g2">
+              <div><label>Sort order</label>
+                <select id="ordMode">
+                  <option value="global">Global continuo (igual a la macro)</option>
+                  <option value="reset">Reinicia desde 1 en cada CSV</option>
+                  <option value="pervendor">Usa el orden original por vendor</option>
+                </select>
+              </div>
+              <div><label>Separador CSV</label>
+                <select id="sep">
+                  <option value=";">Punto y coma ( ; ) — igual a la macro</option>
+                  <option value=",">Coma ( , )</option>
+                </select>
+              </div>
+            </div>
+            <div class="divider"></div>
+            <label>Presets:</label>
+            <div class="preset-row">
+              <button class="btn btn-sm" onclick="setMax(1798)">Equivalente macro (1798)</button>
+              <button class="btn btn-sm" onclick="setMax(500)">500</button>
+              <button class="btn btn-sm" onclick="setMax(1000)">1000</button>
+              <button class="btn btn-sm" onclick="setMax(2000)">2000</button>
+              <button class="btn btn-sm" onclick="setMax(999999)">Sin límite</button>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn" onclick="goStep(2)">← Atrás</button>
+            <button class="btn btn-primary" style="flex:1" onclick="generate()">Generar CSVs ↗</button>
+          </div>
+        </div>
+        <div class="panel" id="pnl4">
+          <div id="results"></div>
+          <button class="btn btn-full" style="margin-top:12px" onclick="resetAll()">← Nueva exportación</button>
+        </div>
+      </div>
+      <div id="page-coming" style="display:none">
+        <div class="card" style="text-align:center;padding:48px 24px">
+          <div style="font-size:36px;margin-bottom:12px">🚧</div>
+          <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px">Próximamente</div>
+          <div style="font-size:13px;color:var(--muted)">Este módulo está en desarrollo.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+var _files=[],_t0=0;
+function showPage(n,e){
+  document.querySelectorAll('[id^="page-"]').forEach(el=>el.style.display='none');
+  document.getElementById('page-'+n).style.display='block';
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  if(e)e.currentTarget.classList.add('active');
+  var t={itemlist:['Item List Generator','Reemplaza la macro de Excel · genera CSVs en milisegundos'],coming:['Próximamente','Este módulo está en desarrollo']};
+  var p=t[n]||['BEES Ops',''];
+  document.getElementById('page-title').textContent=p[0];
+  document.getElementById('page-sub').textContent=p[1];
+}
+function goStep(n){
+  for(var i=1;i<=4;i++){
+    document.getElementById('st'+i).className='step-tab'+(i===n?' active':(i<n?' done':''));
+    document.getElementById('pnl'+i).className='panel'+(i===n?' active':'');
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function resetAll(){goStep(1);var b=document.getElementById('status-badge');b.textContent='Listo';b.className='badge badge-yellow';}
+function plines(t){return t.trim().split(/[
+]+/).map(x=>x.trim()).filter(Boolean);}
+function plinesM(t){return t.trim().split(/[
+,;]+/).map(x=>x.trim()).filter(Boolean);}
+document.getElementById('vendors').addEventListener('input',function(){var n=plinesM(this.value).length;document.getElementById('vcount').textContent=n>0?n+' vendors detectados':'—';});
+document.getElementById('skus').addEventListener('input',upd);
+document.getElementById('orders').addEventListener('input',upd);
+function upd(){
+  var s=plines(document.getElementById('skus').value).length;
+  var o=plines(document.getElementById('orders').value).length;
+  var el=document.getElementById('ord-hint');
+  if(!s){el.textContent='';return;}
+  document.getElementById('skucount').textContent=s+' SKUs detectados';
+  if(!o){el.textContent='Orden vacío → se autogenerará (1 a '+s+' por vendor)';return;}
+  if(o!==s){el.textContent='⚠ '+o+' órdenes vs '+s+' SKUs';el.style.color='#ef4444';return;}
+  el.textContent='✓ Orden manual ('+o+' valores)';el.style.color='#22c55e';
+}
+function autoOrd(){var s=plines(document.getElementById('skus').value);if(!s.length)return;document.getElementById('orders').value=s.map((_,i)=>i+1).join('
+');upd();}
+function setMax(n){document.getElementById('maxC').value=n;}
+function generate(){
+  _t0=performance.now();
+  var vendors=plinesM(document.getElementById('vendors').value);
+  var skus=plines(document.getElementById('skus').value);
+  var ordRaw=plines(document.getElementById('orders').value);
+  var storeId=document.getElementById('storeId').value.trim();
+  var fname=(document.getElementById('filename').value.trim()||'bees_export').replace(/s+/g,'_');
+  var maxC=parseInt(document.getElementById('maxC').value)||1000;
+  var ordMode=document.getElementById('ordMode').value;
+  var sep=document.getElementById('sep').value;
+  if(!vendors.length||!skus.length||!storeId){document.getElementById('results').innerHTML='<div class="alert alert-err">Completá vendors, SKUs y Store Category ID.</div>';goStep(4);return;}
+  var orders=ordRaw.length===skus.length?ordRaw:skus.map((_,i)=>String(i+1));
+  var combos=[];
+  vendors.forEach((v,vi)=>skus.forEach((s,si)=>combos.push({v,s,baseOrder:parseInt(orders[si])||si+1,vi,si})));
+  var chunks=[];
+  for(var i=0;i<combos.length;i+=maxC)chunks.push(combos.slice(i,i+maxC));
+  _files=chunks.map((chunk,ci)=>{
+    var parts=['store_category_id'+sep+'"'+storeId+'"'];
+    chunk.forEach((row,idx)=>{
+      var sv=ordMode==='global'?ci*maxC+idx+1:ordMode==='reset'?idx+1:row.baseOrder;
+      parts.push('added_items['+idx+'].vendor_id'+sep+'"'+row.v+'"');
+      parts.push('added_items['+idx+'].vendor_item_id'+sep+'"'+row.s+'"');
+      parts.push('added_items['+idx+'].sort_order'+sep+'"'+sv+'"');
+    });
+    return{name:fname+'_'+(ci+1)+'.csv',content:parts.join('
+'),combos:chunk.length,rows:parts.length};
+  });
+  var ms=Math.round(performance.now()-_t0);
+  renderR(ms);goStep(4);
+  var b=document.getElementById('status-badge');b.textContent=_files.length+' archivos listos';b.className='badge badge-green';
+}
+function renderR(ms){
+  var f=_files,tc=f.reduce((a,x)=>a+x.combos,0),tr=f.reduce((a,x)=>a+x.rows,0),h='';
+  h+='<div class="g4" style="margin-bottom:16px">';
+  h+=st('Archivos',f.length)+st('Combos',tc.toLocaleString())+st('Filas',tr.toLocaleString())+st('Tiempo',ms+' ms');
+  h+='</div>';
+  h+='<div class="alert alert-ok">✓ '+f.length+' archivo'+(f.length>1?'s':'')+' generados.</div>';
+  if(f.length>1)h+='<button class="btn btn-primary btn-sm" style="margin-bottom:12px" onclick="dlAll()">↓ Descargar todos ('+f.length+')</button> ';
+  f.forEach((x,i)=>{
+    h+='<div class="file-row"><div><div class="file-name">'+esc(x.name)+'</div><div class="file-meta">'+x.combos+' combos · '+x.rows.toLocaleString()+' filas</div></div>';
+    h+='<div style="display:flex;gap:6px"><button class="btn btn-sm" onclick="cp('+i+')">Copiar</button><button class="btn btn-sm btn-primary" onclick="dl('+i+')">↓ Descargar</button></div></div>';
+  });
+  if(f.length>0){
+    var lines=f[0].content.split('
+').slice(0,16);
+    h+='<div class="card" style="margin-top:16px"><div class="card-title">Previa — '+esc(f[0].name)+'</div>';
+    h+='<div class="preview-wrap"><table class="preview-table"><thead><tr><th>#</th><th>Contenido</th></tr></thead><tbody>';
+    lines.forEach((l,i)=>h+='<tr><td style="color:var(--muted);width:32px">'+(i+1)+'</td><td>'+esc(l)+'</td></tr>');
+    h+='</tbody></table></div></div>';
+  }
+  document.getElementById('results').innerHTML=h;
+}
+function st(l,v){return '<div class="stat"><div class="stat-label">'+l+'</div><div class="stat-value">'+v+'</div></div>';}
+function dl(i){var f=_files[i],blob=new Blob(['﻿'+f.content],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=f.name;a.style.display='none';document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(()=>URL.revokeObjectURL(url),1000);}
+function dlAll(){_files.forEach((_,i)=>setTimeout(()=>dl(i),i*300));}
+function cp(i){var t=_files[i].content;if(navigator.clipboard)navigator.clipboard.writeText(t).then(flash);else{var ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;top:-9999px;opacity:0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);flash();}}
+function flash(){var d=document.createElement('div');d.className='alert alert-ok';d.textContent='✓ Copiado';var r=document.getElementById('results');r.insertBefore(d,r.firstChild);setTimeout(()=>d.remove(),2500);}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>
