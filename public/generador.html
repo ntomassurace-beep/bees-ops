@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generador de Descripciones — BEES Ops</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--y:#f5c518;--yd:#d4a415;--yk:#1a1200;--bg:#0f1117;--surface:#181c27;--card:#1e2333;--border:#2a3045;--border2:#3a4560;--text:#e8eaf0;--muted:#8892a4;--green:#22c55e;--grbg:#052010;--red:#ef4444;--rdbg:#200505;--mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+.shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:10px;padding:20px 18px;border-bottom:1px solid var(--border)}
+.logo{width:34px;height:34px;background:var(--y);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:var(--yk)}
+.brand-name{font-size:13px;font-weight:600}
+.brand-sub{font-size:10px;color:var(--muted)}
+nav{padding:12px 10px;flex:1}
+.ni{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;font-size:13px;color:var(--muted);margin-bottom:1px;text-decoration:none}
+.ni.on{background:rgba(245,197,24,.1);color:var(--y)}
+.ni svg{width:16px;height:16px;flex-shrink:0;opacity:.7}
+.ni.on svg{opacity:1}
+.sf{padding:14px 18px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
+.main{display:flex;flex-direction:column}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.pt{font-size:15px;font-weight:600}
+.ps{font-size:12px;color:var(--muted);margin-top:1px}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500}
+.by{background:rgba(245,197,24,.15);color:var(--y)}
+.bg{background:rgba(34,197,94,.12);color:var(--green)}
+.content{padding:28px;flex:1;max-width:960px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:16px}
+.ct{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:500}
+input[type=file]{display:none}
+.dz{border:1.5px dashed var(--border2);border-radius:10px;padding:32px;text-align:center;cursor:pointer;transition:all .15s}
+.dz:hover,.dz.drag{background:var(--surface);border-color:var(--y)}
+.dz-icon{font-size:28px;margin-bottom:10px}
+.dz-label{font-size:14px;font-weight:500;margin-bottom:4px}
+.dz-sub{font-size:12px;color:var(--muted)}
+.file-info{margin-top:10px;display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:7px;border:1px solid var(--border);background:var(--surface);font-size:12px}
+.row2{display:flex;gap:14px;margin-bottom:14px}
+.col{flex:1}
+select,input[type=password]{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--text);outline:none}
+select:focus,input:focus{border-color:var(--border2)}
+select option{background:var(--card)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--text);transition:all .15s}
+.btn:hover{border-color:var(--border2)}
+.btn-p{background:var(--y);border-color:var(--yd);color:var(--yk);font-weight:600}
+.btn-p:hover{background:var(--yd)}
+.btn-p:disabled{opacity:.4;cursor:default}
+.btn-s{border-color:rgba(239,68,68,.4);color:var(--red)}
+.btn-sm{padding:5px 11px;font-size:11px;border-radius:6px}
+.pbg{height:4px;background:var(--surface);border-radius:2px;overflow:hidden;margin-bottom:8px}
+.pbar{height:4px;background:var(--y);border-radius:2px;transition:width .4s}
+.log{font-size:11px;color:var(--muted);max-height:100px;overflow-y:auto;display:flex;flex-direction:column;gap:2px;font-family:var(--mono)}
+.lr{display:flex;gap:6px}
+.ok{color:var(--green)}
+.er{color:var(--red)}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px}
+.sn{font-size:22px;font-weight:600}
+.sl{font-size:11px;color:var(--muted);margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{padding:8px 12px;text-align:left;color:var(--muted);font-weight:500;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0}
+td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.5}
+.tw{border:1px solid var(--border);border-radius:10px;overflow:hidden;max-height:320px;overflow-y:auto}
+.pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px}
+.p-ok{background:var(--grbg);color:var(--green)}
+.p-er{background:var(--rdbg);color:var(--red)}
+.p-tr{background:rgba(245,197,24,.1);color:var(--y)}
+.cc{font-size:10px;color:var(--muted)}
+.co{color:var(--red)}
+.pc{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.pc button{padding:3px 9px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;font-size:11px}
+.hint{font-size:11px;color:var(--green);margin-top:6px}
+.warn{font-size:11px;color:var(--red);margin-top:6px}
+.hidden{display:none}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.note{font-size:11px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="sidebar">
+  <div class="brand">
+    <div class="logo">B</div>
+    <div><div class="brand-name">BEES Ops</div><div class="brand-sub">Quilmes &middot; Materia</div></div>
+  </div>
+  <nav>
+    <a class="ni" href="/"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Item List Generator</a>
+    <a class="ni on" href="/generador"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>Generador Descripciones</a>
+  </nav>
+  <div class="sf">BEES Ops v1.0 &middot; Materia Quilmes</div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div><div class="pt">Generador de Descripciones</div><div class="ps">Genera descripciones para hasta 1000 productos &middot; M&aacute;x. 300 caracteres</div></div>
+    <span class="badge by" id="sb">Listo</span>
+  </div>
+  <div class="content">
+
+    <div class="card">
+      <div class="ct">Archivo de productos</div>
+      <div class="dz" id="dz">
+        <input type="file" id="fi" accept=".xlsx,.xls">
+        <div class="dz-icon">&#128196;</div>
+        <div class="dz-label">Arrastr&aacute; tu Excel o hac&eacute; clic</div>
+        <div class="dz-sub">Columnas requeridas: SKU y T&iacute;tulo &middot; M&aacute;x. 1000 productos</div>
+        <div id="fm" class="file-info hidden"></div>
+      </div>
+      <div id="ch" class="hint hidden"></div>
+      <div id="uw" class="warn hidden"></div>
+    </div>
+
+    <div class="card">
+      <div class="ct">Configuraci&oacute;n</div>
+      <div class="row2">
+        <div class="col">
+          <label>Concurrencia</label>
+          <select id="cc">
+            <option value="3">3 en paralelo (conservador)</option>
+            <option value="5" selected>5 en paralelo (recomendado)</option>
+            <option value="8">8 en paralelo (r&aacute;pido)</option>
+          </select>
+        </div>
+        <div class="col">
+          <label>API Key de Anthropic</label>
+          <input type="password" id="ak" placeholder="sk-ant-..." autocomplete="off">
+        </div>
+      </div>
+      <p class="note">La clave se usa solo localmente y no se almacena. Tambi&eacute;n pod&eacute;s configurar ANTHROPIC_API_KEY como variable de entorno en Vercel para no tener que ingresarla.</p>
+      <div class="divider"></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-p" id="gb" onclick="go()" disabled>Generar descripciones</button>
+        <button class="btn btn-sm" onclick="reset()">Limpiar</button>
+        <span id="et" class="note"></span>
+      </div>
+    </div>
+
+    <div class="card hidden" id="pc">
+      <div class="ct" id="pl">Generando...</div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
+        <span id="pok" style="color:var(--green)">0 OK</span>
+        <span id="per" style="color:var(--red)">0 errores</span>
+        <span id="pct">0 / 0</span>
+        <span id="pet" class="note"></span>
+      </div>
+      <div class="pbg"><div class="pbar" id="pb" style="width:0%"></div></div>
+      <div class="log" id="la"></div>
+      <div style="margin-top:12px" id="ra">
+        <button class="btn btn-s btn-sm" onclick="stop()">Detener</button>
+      </div>
+    </div>
+
+    <div class="hidden" id="rb">
+      <div class="stats">
+        <div class="stat"><div class="sn" id="s1">0</div><div class="sl">Generadas</div></div>
+        <div class="stat"><div class="sn" id="s2">0</div><div class="sl">Errores</div></div>
+        <div class="stat"><div class="sn" id="s3">0</div><div class="sl">Truncadas</div></div>
+        <div class="stat"><div class="sn" id="s4">0s</div><div class="sl">Tiempo</div></div>
+        <div class="stat"><div class="sn" id="s5">0/min</div><div class="sl">Velocidad</div></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span id="ts" class="note"></span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="pc"><button onclick="pg(-1)">&#8592;</button><span id="pi">1/1</span><button onclick="pg(1)">&#8594;</button></div>
+          <button class="btn btn-p btn-sm" onclick="dl()">Descargar Excel</button>
+          <button class="btn btn-sm" onclick="reset()">Nueva tanda</button>
+        </div>
+      </div>
+      <div class="tw">
+        <table>
+          <thead><tr><th style="width:80px">SKU</th><th style="width:30%">T&iacute;tulo</th><th>Descripci&oacute;n generada</th><th style="width:60px"></th></tr></thead>
+          <tbody id="tb"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+var MP=1000,MC=300,PG=50;
+var prods=[],res=[],t0=0;
+var running=false,stop_=false;
+var done=0,errs=0,trs=0,page=0;
+var pend=[],rtm=null;
+
+var dz=document.getElementById('dz'),fi=document.getElementById('fi');
+dz.addEventListener('click',()=>fi.click());
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');if(e.dataTransfer.files[0])load(e.dataTransfer.files[0]);});
+fi.addEventListener('change',()=>{if(fi.files[0])load(fi.files[0]);});
+
+function nk(k){return String(k||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();}
+function fc(keys,pats){
+  var n=keys.map(nk);
+  for(var p=0;p<pats.length;p++) for(var k=0;k<n.length;k++) if(pats[p].test(n[k])) return {key:keys[k],idx:k};
+  return null;
+}
+
+function load(f){
+  var r=new FileReader();
+  r.onload=e=>{
+    try{
+      var wb=XLSX.read(e.target.result,{type:'binary'});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var data=XLSX.utils.sheet_to_json(ws,{defval:''});
+      if(!data.length){alert('Sin datos.');return;}
+      var keys=Object.keys(data[0]);
+      var sm=fc(keys,[/^sku$/,/^cod/,/sku/]);
+      var tm=fc(keys,[/^titulo$/,/^title$/,/titulo|title/,/nombre|name/,/producto/]);
+      var sk=sm?sm.key:keys[0];
+      var tk=tm?tm.key:(keys.length>1?keys[1]:keys[0]);
+      if(sk===tk&&keys.length>1) tk=keys[(sm&&sm.idx===0)?1:0];
+      var all=data.map(row=>({sku:String(row[sk]||'').trim(),title:String(row[tk]||'').trim()})).filter(p=>p.title);
+      if(!all.length){alert('No se encontraron productos. Columnas: '+keys.join(', '));return;}
+      prods=all.length>MP?all.slice(0,MP):all;
+      document.getElementById('ch').textContent='Columnas: SKU='+sk+' | Titulo='+tk+' | '+prods.length+' productos';
+      document.getElementById('ch').classList.remove('hidden');
+      var uw=document.getElementById('uw');
+      if(all.length>MP){uw.textContent='El archivo tiene '+all.length+' filas. Se procesaran los primeros '+MP+'.';uw.classList.remove('hidden');}
+      else uw.classList.add('hidden');
+      document.getElementById('fm').textContent=f.name+' · '+prods.length+' productos';
+      document.getElementById('fm').classList.remove('hidden');
+      document.getElementById('gb').disabled=false;
+      est();
+    }catch(e){alert('Error: '+e.message);}
+  };
+  r.readAsBinaryString(f);
+}
+
+function est(){
+  var c=parseInt(document.getElementById('cc').value);
+  var s=Math.ceil((prods.length/c)*2.5);
+  var m=Math.floor(s/60);
+  document.getElementById('et').textContent='~'+(m>0?m+'min '+(s%60)+'s':s+'s')+' estimado';
+}
+document.getElementById('cc').addEventListener('change',est);
+
+async function go(){
+  if(running)return;
+  var ak=document.getElementById('ak').value.trim();
+  if(!ak){alert('Ingresa tu API Key de Anthropic (sk-ant-...)');return;}
+  if(!prods.length){alert('Carga un archivo primero.');return;}
+  running=true;stop_=false;
+  res=new Array(prods.length);
+  done=0;errs=0;trs=0;page=0;
+  t0=Date.now();
+  document.getElementById('gb').disabled=true;
+  document.getElementById('pc').classList.remove('hidden');
+  document.getElementById('rb').classList.remove('hidden');
+  document.getElementById('tb').innerHTML='';
+  document.getElementById('la').innerHTML='';
+  document.getElementById('pb').style.width='0%';
+  document.getElementById('pl').textContent='Generando descripciones...';
+  document.getElementById('sb').textContent='Procesando';
+  document.getElementById('sb').className='badge by';
+  var c=parseInt(document.getElementById('cc').value);
+  var idx=0;
+  async function worker(){
+    while(idx<prods.length&&!stop_){
+      var i=idx++;var p=prods[i];
+      var ok=false,last='',att=0;
+      while(att<2&&!ok&&!stop_){
+        att++;
+        try{
+          if(att>1)await sl(2000);
+          var desc=await api(p.sku,p.title,ak);
+          var tr=false;
+          if(desc.length>MC){desc=tw(desc,MC);tr=true;trs++;}
+          res[i]={sku:p.sku,title:p.title,desc:desc,ok:true,tr:tr};
+          log_(p.sku,p.title,desc,true,tr);
+          qr(i);ok=true;
+        }catch(e){
+          last=e.message||'error';
+          if(e.status===429||e.status===529)await sl(6000);
+        }
+      }
+      if(!ok){
+        res[i]={sku:p.sku,title:p.title,desc:'Error: '+last,ok:false,tr:false};
+        log_(p.sku,p.title,last,false,false);
+        qr(i);errs++;
+      }
+      done++;upd();
+    }
+  }
+  var ws=[];
+  for(var w=0;w<Math.min(c,prods.length);w++) ws.push(worker());
+  await Promise.all(ws);
+  fin();
+}
+
+function tw(t,m){
+  if(t.length<=m)return t;
+  var c=t.lastIndexOf(' ',m);
+  if(c<m*0.6)c=m;
+  return t.slice(0,c).replace(/[,;:s]+$/,'')+' ...';
+}
+
+async function api(sku,title,ak){
+  var r=await fetch('/api/generate',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':ak},
+    body:JSON.stringify({sku,title})
+  });
+  var d=await r.json();
+  if(!r.ok){var e=new Error(d.error||'HTTP '+r.status);e.status=r.status;throw e;}
+  return d.description||'';
+}
+
+function sl(ms){return new Promise(r=>setTimeout(r,ms));}
+
+function upd(){
+  var tot=prods.length;
+  document.getElementById('pb').style.width=Math.round((done/tot)*100)+'%';
+  document.getElementById('pct').textContent=done+' / '+tot;
+  document.getElementById('pok').textContent=(done-errs)+' OK';
+  document.getElementById('per').textContent=errs+' errores';
+  if(done>2){
+    var el=(Date.now()-t0)/1000;
+    var rem=Math.round(((tot-done)/done)*el);
+    if(rem>0)document.getElementById('pet').textContent='ETA: '+(rem>59?Math.floor(rem/60)+'min ':'')+(rem%60)+'s';
+  }
+}
+
+function fin(){
+  running=false;
+  var el=Math.round((Date.now()-t0)/1000);
+  var rate=el>0?Math.round((done/el)*60):0;
+  document.getElementById('pl').textContent=stop_?'Detenido ('+done+' procesados)':'Completado';
+  document.getElementById('s1').textContent=done-errs;
+  document.getElementById('s2').textContent=errs;
+  document.getElementById('s3').textContent=trs;
+  document.getElementById('s4').textContent=el+'s';
+  document.getElementById('s5').textContent=rate+'/min';
+  document.getElementById('ra').innerHTML='';
+  document.getElementById('sb').textContent=(done-errs)+' generadas';
+  document.getElementById('sb').className='badge bg';
+  rend();
+}
+
+function stop(){stop_=true;document.getElementById('pl').textContent='Deteniendo...';}
+
+function log_(sku,title,text,ok,tr){
+  var a=document.getElementById('la');
+  var d=document.createElement('div');
+  d.className='lr';
+  var st=title.length>25?title.slice(0,25)+'...':title;
+  var sd=text.length>50?text.slice(0,50)+'...':text;
+  d.innerHTML='<span style="min-width:65px;color:var(--muted)">'+esc(sku||'-')+'</span>'+
+    '<span class="'+(ok?'ok':'er')+'">'+(ok?'✓':'✗')+'</span>'+
+    '<span style="margin-left:4px">'+esc(st)+' → '+esc(sd)+(tr?' <span style="color:var(--y)">[tr]</span>':'')+'</span>';
+  a.appendChild(d);
+  a.scrollTop=a.scrollHeight;
+  if(a.children.length>60)a.removeChild(a.children[0]);
+}
+
+function qr(i){
+  pend.push(i);
+  if(!rtm)rtm=setTimeout(()=>{rtm=null;pend.splice(0);rend();},400);
+}
+
+function rend(){
+  var filled=res.filter(r=>r);
+  var tot=filled.length;
+  var tp=Math.max(1,Math.ceil(tot/PG));
+  if(page>=tp)page=tp-1;
+  var s=page*PG,e=Math.min(s+PG,tot);
+  var items=filled.slice(s,e);
+  document.getElementById('pi').textContent=(page+1)+'/'+tp;
+  document.getElementById('ts').textContent=tot+' resultados ('+(s+1)+'-'+e+')';
+  var h='';
+  for(var i=0;i<items.length;i++){
+    var r=items[i];
+    var n=r.desc.length;
+    var badge=r.ok?(r.tr?'<span class="pill p-tr">Trunc.</span>':'<span class="pill p-ok">OK</span>'):'<span class="pill p-er">Error</span>';
+    h+='<tr><td style="font-family:var(--mono);font-size:11px;color:var(--muted)">'+esc(r.sku)+'</td>'+
+      '<td style="color:var(--muted);font-size:12px">'+esc(r.title.length>40?r.title.slice(0,40)+'...':r.title)+'</td>'+
+      '<td style="font-size:12px">'+esc(r.desc)+' <span class="cc'+(n>MC?' co':'')+'">'+n+'c</span></td>'+
+      '<td>'+badge+'</td></tr>';
+  }
+  document.getElementById('tb').innerHTML=h;
+}
+
+function pg(d){
+  var filled=res.filter(r=>r);
+  var tp=Math.max(1,Math.ceil(filled.length/PG));
+  page=Math.max(0,Math.min(tp-1,page+d));
+  rend();
+}
+
+function dl(){
+  var data=res.filter(r=>r).map(r=>({'SKU':r.sku,'Titulo':r.title,'Descripcion generada':r.desc}));
+  var ws=XLSX.utils.json_to_sheet(data);
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Descripciones');
+  ws['!cols']=[{wch:15},{wch:50},{wch:90}];
+  XLSX.writeFile(wb,'descripciones_bees_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+function reset(){
+  prods=[];res=[];running=false;stop_=false;
+  done=0;errs=0;trs=0;page=0;pend=[];
+  if(rtm){clearTimeout(rtm);rtm=null;}
+  ['fm','ch','uw'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  document.getElementById('pc').classList.add('hidden');
+  document.getElementById('rb').classList.add('hidden');
+  document.getElementById('gb').disabled=true;
+  document.getElementById('tb').innerHTML='';
+  document.getElementById('la').innerHTML='';
+  document.getElementById('sb').textContent='Listo';
+  document.getElementById('sb').className='badge by';
+  fi.value='';
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>
