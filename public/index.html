@@ -64,12 +64,6 @@ select option{background:var(--card)}
 .file-row:hover{border-color:var(--border2)}
 .file-name{font-family:var(--mono);font-size:12px;color:var(--text)}
 .file-meta{font-size:11px;color:var(--muted);margin-top:2px}
-.preview-wrap{overflow-x:auto;margin-top:4px}
-.preview-table{width:100%;border-collapse:collapse;font-size:11px;font-family:var(--mono)}
-.preview-table th{text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);color:var(--muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.05em}
-.preview-table td{padding:5px 10px;border-bottom:1px solid var(--border);color:var(--text)}
-.preview-table tr:last-child td{border-bottom:none}
-.preview-table tr:hover td{background:var(--surface)}
 .hint{font-size:11px;color:var(--muted);margin-top:5px}
 .divider{height:1px;background:var(--border);margin:16px 0}
 .preset-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
@@ -124,10 +118,10 @@ select option{background:var(--card)}
 <div class="g3" style="margin-bottom:14px">
 <div><label>Store Category ID</label><input type="text" id="storeId" value="088-000-042"></div>
 <div><label>Nombre del archivo</label><input type="text" id="filename" placeholder="coleccion_q1_2025"></div>
-<div><label>M&aacute;x. combos por CSV</label><input type="number" id="maxC" value="1000" min="10"></div>
+<div><label>M&aacute;x. combos por archivo</label><input type="number" id="maxC" value="1798" min="10"></div>
 </div>
 <div class="g2">
-<div><label>Sort order</label><select id="ordMode"><option value="global">Global continuo (como la macro)</option><option value="reset">Reinicia en cada CSV</option><option value="pervendor">Por vendor</option></select></div>
+<div><label>Sort order</label><select id="ordMode"><option value="global">Global continuo (como la macro)</option><option value="reset">Reinicia en cada archivo</option><option value="pervendor">Por vendor</option></select></div>
 <div><label>Separador</label><select id="sep"><option value=";">Punto y coma ( ; )</option><option value=",">Coma ( , )</option></select></div>
 </div>
 <div class="divider"></div>
@@ -158,8 +152,8 @@ function showPage(n, e) {
   var items = document.querySelectorAll('.nav-item');
   for (var i = 0; i < items.length; i++) items[i].classList.remove('active');
   if (e) e.currentTarget.classList.add('active');
-  var titles = { itemlist: ['Item List Generator', 'Reemplaza la macro de Excel'], coming: ['Proximamente', 'Modulo en desarrollo'] };
-  var p = titles[n] || ['BEES Ops', ''];
+  var T = { itemlist: ['Item List Generator', 'Reemplaza la macro de Excel'], coming: ['Proximamente', 'Modulo en desarrollo'] };
+  var p = T[n] || ['BEES Ops', ''];
   document.getElementById('page-title').textContent = p[0];
   document.getElementById('page-sub').textContent = p[1];
 }
@@ -226,7 +220,7 @@ function generate() {
   var fname = '';
   for (var i = 0; i < fnameRaw.length; i++) fname += fnameRaw[i] === ' ' ? '_' : fnameRaw[i];
   if (!fname) fname = 'bees_export';
-  var maxC = parseInt(document.getElementById('maxC').value) || 1000;
+  var maxC = parseInt(document.getElementById('maxC').value) || 1798;
   var ordMode = document.getElementById('ordMode').value;
   var sep = document.getElementById('sep').value;
   if (!vendors.length || !skus.length || !storeId) {
@@ -244,15 +238,21 @@ function generate() {
   _F = [];
   for (var ci = 0; ci < chunks.length; ci++) {
     var chunk = chunks[ci];
-    var parts = ['store_category_id' + sep + '"' + storeId + '"'];
+    var globalOffset = ci * maxC;
+    var headerParts = ['store_category_id'];
+    var dataParts = [storeId];
     for (var idx = 0; idx < chunk.length; idx++) {
       var row = chunk[idx];
-      var sv = ordMode === 'global' ? ci * maxC + idx + 1 : ordMode === 'reset' ? idx + 1 : row.b;
-      parts.push('added_items[' + idx + '].vendor_id' + sep + '"' + row.v + '"');
-      parts.push('added_items[' + idx + '].vendor_item_id' + sep + '"' + row.s + '"');
-      parts.push('added_items[' + idx + '].sort_order' + sep + '"' + sv + '"');
+      var sv = ordMode === 'global' ? globalOffset + idx + 1 : ordMode === 'reset' ? idx + 1 : row.b;
+      headerParts.push('added_items[' + idx + '].vendor_id');
+      headerParts.push('added_items[' + idx + '].vendor_item_id');
+      headerParts.push('added_items[' + idx + '].sort_order');
+      dataParts.push(row.v);
+      dataParts.push(row.s);
+      dataParts.push(String(sv));
     }
-    _F.push({ name: fname + '_' + (ci + 1) + '.csv', content: parts.join('\r\n'), combos: chunk.length, rows: parts.length });
+    var content = headerParts.join(sep) + '\r\n' + dataParts.join(sep);
+    _F.push({ name: fname + '_' + (ci + 1) + '.csv', content: content, combos: chunk.length });
   }
   var ms = Math.round(performance.now() - _t);
   renderR(ms); goStep(4);
@@ -260,25 +260,18 @@ function generate() {
   document.getElementById('status-badge').className = 'badge badge-green';
 }
 function renderR(ms) {
-  var f = _F, tc = 0, tr = 0;
-  for (var i = 0; i < f.length; i++) { tc += f[i].combos; tr += f[i].rows; }
-  var h = '<div class="g4" style="margin-bottom:16px">' + st('Archivos', f.length) + st('Combos', tc) + st('Filas', tr) + st('Tiempo', ms + ' ms') + '</div>';
-  h += '<div class="alert alert-ok">Generados: ' + f.length + ' archivo' + (f.length > 1 ? 's' : '') + '.</div>';
+  var f = _F, tc = 0;
+  for (var i = 0; i < f.length; i++) tc += f[i].combos;
+  var h = '<div class="g4" style="margin-bottom:16px">' + st('Archivos', f.length) + st('Combos', tc) + st('Filas', '2 x archivo') + st('Tiempo', ms + ' ms') + '</div>';
+  h += '<div class="alert alert-ok">Generados: ' + f.length + ' archivo' + (f.length > 1 ? 's' : '') + ' (formato horizontal, 2 filas c/u)</div>';
   if (f.length > 1) h += '<button class="btn btn-primary btn-sm" style="margin-bottom:12px" onclick="dlAll()">Descargar todos (' + f.length + ')</button> ';
   for (var i = 0; i < f.length; i++)
-    h += '<div class="file-row"><div><div class="file-name">' + esc(f[i].name) + '</div><div class="file-meta">' + f[i].combos + ' combos - ' + f[i].rows + ' filas</div></div><div style="display:flex;gap:6px"><button class="btn btn-sm" onclick="cp(' + i + ')">Copiar</button><button class="btn btn-sm btn-primary" onclick="dl(' + i + ')">Descargar</button></div></div>';
-  if (f.length > 0) {
-    var lines = f[0].content.split('\r\n');
-    if (lines.length > 16) lines = lines.slice(0, 16);
-    h += '<div class="card" style="margin-top:16px"><div class="card-title">Previa - ' + esc(f[0].name) + '</div><div class="preview-wrap"><table class="preview-table"><thead><tr><th>#</th><th>Contenido</th></tr></thead><tbody>';
-    for (var i = 0; i < lines.length; i++) h += '<tr><td style="color:var(--muted);width:32px">' + (i + 1) + '</td><td>' + esc(lines[i]) + '</td></tr>';
-    h += '</tbody></table></div></div>';
-  }
+    h += '<div class="file-row"><div><div class="file-name">' + esc(f[i].name) + '</div><div class="file-meta">' + f[i].combos + ' combos &middot; 2 filas (header + datos)</div></div><div style="display:flex;gap:6px"><button class="btn btn-sm" onclick="cp(' + i + ')">Copiar</button><button class="btn btn-sm btn-primary" onclick="dl(' + i + ')">Descargar</button></div></div>';
   document.getElementById('results').innerHTML = h;
 }
 function st(l, v) { return '<div class="stat"><div class="stat-label">' + l + '</div><div class="stat-value">' + v + '</div></div>'; }
 function dl(i) {
-  var f = _F[i], blob = new Blob(['\uFEFF' + f.content], { type: 'text/csv;charset=utf-8' }), url = URL.createObjectURL(blob), a = document.createElement('a');
+  var f = _F[i], blob = new Blob([f.content], { type: 'text/csv;charset=utf-8' }), url = URL.createObjectURL(blob), a = document.createElement('a');
   a.href = url; a.download = f.name; a.style.display = 'none';
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
